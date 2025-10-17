@@ -16,8 +16,9 @@
     "default": "pwd"
   },
   "group_control_mode": {
-    "description": "群控制模式：off/whitelist/blacklist",
+    "description": "群控制模式",
     "type": "string",
+    "options": ["off", "whitelist", "blacklist"],
     "default": "off"
   },
   "group_list": {
