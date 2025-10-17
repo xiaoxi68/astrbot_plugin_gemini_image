@@ -15,6 +15,11 @@
     "type": "string",
     "default": "pwd"
   },
+  "temperature": {
+    "description": "采样温度 (0.0-2.0)",
+    "type": "float",
+    "default": 1.0
+  },
   "max_retry_attempts": {
     "description": "每个密钥的最大重试次数",
     "type": "int",

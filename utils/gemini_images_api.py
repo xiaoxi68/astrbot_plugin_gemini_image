@@ -246,6 +246,7 @@ async def generate_or_edit_image_gemini_stream(
     input_images_b64: Optional[List[str]] = None,
     max_retry_attempts: int = 3,
     timeout_seconds: int = 60,
+    temperature: Optional[float] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     调用流式接口（streamGenerateContent）。收到第一帧图片即返回。
@@ -290,6 +291,13 @@ async def generate_or_edit_image_gemini_stream(
             payload: Dict = {
                 "contents": [{"role": "user", "parts": parts}]
             }
+            if temperature is not None:
+                gen = payload.get("generationConfig", {})
+                gen2 = payload.get("generation_config", {})
+                gen["temperature"] = temperature
+                gen2["temperature"] = temperature
+                payload["generationConfig"] = gen
+                payload["generation_config"] = gen2
 
             try:
                 async with httpx.AsyncClient(timeout=timeout_seconds) as client:

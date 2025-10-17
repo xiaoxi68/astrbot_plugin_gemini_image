@@ -23,8 +23,13 @@ class GeminiImagePlugin(Star):
         # 模型与重试
         self.model_name = (config.get("model_name") or "gemini-2.5-flash-image").strip()
         self.max_retry_attempts = int(config.get("max_retry_attempts", 3))
-        # 固定策略：默认启用流式，附带 alt=sse；不提供可配置项
+        # 固定策略：默认启用流式，附带 alt=sse；不提供开关
         self.use_stream = True
+        # 温度参数（重新加入配置）
+        try:
+            self.temperature = float(config.get("temperature", 1.0))
+        except Exception:
+            self.temperature = 1.0
 
         # gcli2api 鉴权（默认 pwd）
         self.gcli2api_api_password = (config.get("gcli2api_api_password") or "pwd").strip()
@@ -49,7 +54,12 @@ class GeminiImagePlugin(Star):
             # 不再加载端点与流式相关配置项（固定策略）
             if "gcli2api_api_password" in plugin_config:
                 self.gcli2api_api_password = str(plugin_config["gcli2api_api_password"]).strip() or self.gcli2api_api_password
-            # 不再加载生成参数与系统指令（固定策略）
+            # 重新加载温度配置（其余生成参数固定不提供）
+            if "temperature" in plugin_config:
+                try:
+                    self.temperature = float(plugin_config.get("temperature", self.temperature))
+                except Exception:
+                    pass
         except Exception as e:
             logger.error(f"加载全局配置失败: {e}")
         finally:
@@ -110,6 +120,7 @@ class GeminiImagePlugin(Star):
                     endpoint_path=endpoint_path,
                     input_images_b64=input_images,
                     max_retry_attempts=self.max_retry_attempts,
+                    temperature=self.temperature,
                 )
                 # 流式失败则回退非流式
                 if not image_path:
@@ -122,6 +133,7 @@ class GeminiImagePlugin(Star):
                         endpoint_path=self._GEN_PATH,
                         input_images_b64=input_images,
                         max_retry_attempts=self.max_retry_attempts,
+                        temperature=self.temperature,
                     )
             else:
                 from .utils.gemini_images_api import generate_or_edit_image_gemini
@@ -133,6 +145,7 @@ class GeminiImagePlugin(Star):
                     endpoint_path=endpoint_path,
                     input_images_b64=input_images,
                     max_retry_attempts=self.max_retry_attempts,
+                    temperature=self.temperature,
                 )
 
             if not image_path:
