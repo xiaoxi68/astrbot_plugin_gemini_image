@@ -167,15 +167,15 @@ class GeminiImagePlugin(Star):
             logger.error(f"Gemini 生图/改图异常: {e}")
             yield event.plain_result(f"图像处理失败: {str(e)}")
 
-    @filter.command("aiimg生图")
+    @filter.command("生图")
     async def cmd_generate(self, event: AstrMessageEvent, *, prompt: str):
-        """生图：/aiimg生图 <提示词>"""
+        """生图：/生图 <提示词>"""
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=False, mode="generate"):
             yield res
 
-    @filter.command("aiimg改图")
+    @filter.command("改图")
     async def cmd_edit(self, event: AstrMessageEvent, *, prompt: str):
-        """改图（需携带/引用图片）：/aiimg改图 <提示词>"""
+        """改图（需携带/引用图片）：/改图 <提示词>"""
         # 如果未携带/引用图片，提示用户
         has_image = False
         if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
@@ -191,14 +191,14 @@ class GeminiImagePlugin(Star):
                 if has_image:
                     break
         if not has_image:
-            yield event.plain_result("请先携带或引用一张图片后，再使用：/aiimg改图 <提示词>")
+            yield event.plain_result("请先携带或引用一张图片后，再使用：/改图 <提示词>")
             return
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=True, mode="edit"):
             yield res
 
-    @filter.command("aiimg手办化")
+    @filter.command("手办化")
     async def cmd_figure(self, event: AstrMessageEvent):
-        """手办化（需携带/引用图片）：/aiimg手办化"""
+        """手办化（需携带/引用图片）：/手办化"""
         default_prompt = (
             "Create a highly realistic 1/7 scale commercialized figure based on the illustration’s adult character, "
             "ensuring the appearance and content are safe, healthy, and free from any inappropriate elements. "
@@ -223,9 +223,49 @@ class GeminiImagePlugin(Star):
                 if has_image:
                     break
         if not has_image:
-            yield event.plain_result("手办化需要携带或引用图片，请附图后再发送：/aiimg手办化")
+            yield event.plain_result("手办化需要携带或引用图片，请附图后再发送：/手办化")
             return
         async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
+            yield res
+
+    @filter.command("手办化2")
+    async def cmd_figure2(self, event: AstrMessageEvent):
+        """手办化2（需携带/引用图片）：/手办化2"""
+        default_prompt2 = (
+            "Your primary mission is to convert the subject from the user's photo into a **photorealistic, ultra-high-resolution miniature figure**, presented in its commercial packaging.  \n"
+            "The result must be **sharp, crystal-clear, and professional product photography quality**, with **no blurriness or distortion**.\n\n"
+            "**Core Directive: Subject Analysis & Priority Assignment (CRITICAL FIRST STEP)**  \n"
+            "1. Identify the subject of the image.  \n"
+            "2. Apply the correct rule set:  \n\n"
+            "* **RULE SET A - Person, creature, or animal:**  \n"
+            "   - **If a face is visible:** Your top priority is **Likeness**. Render the face in sharp detail, with accurate proportions.  \n"
+            "   - **If NO face is visible (e.g., back view):** Your top priority is **Pose and Form Fidelity**. **Do NOT invent or add a face** — faithfully preserve the back-view pose from the source photo.  \n\n"
+            "* **RULE SET B - Vehicle:** Prioritize exact **Form, Proportions, Surface Finish, and Key Details**.  \n\n"
+            "* **RULE SET C - Building/structure:** Prioritize **Architectural Integrity** (geometry, materials, fine details).  \n\n"
+            "**Scene Details:**  \n"
+            "1. **The Model:** The miniature figure must be **highly detailed, sharp, and exactly match the pose from the input photo**.  \n"
+            "2. **The Base:** A clean, simple display base.  \n"
+            "3. **The Packaging:** Behind the model, show a collector’s style box featuring the subject.  \n"
+            "4. **Environment:** A professional, well-lit indoor studio setting, **sharp focus, no blur, no noise**."
+        )
+        # 检查是否包含图片
+        has_image = False
+        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
+            for comp in event.message_obj.message:
+                if isinstance(comp, Image):
+                    has_image = True
+                    break
+                if isinstance(comp, Reply) and comp.chain:
+                    for reply_comp in comp.chain:
+                        if isinstance(reply_comp, Image):
+                            has_image = True
+                            break
+                if has_image:
+                    break
+        if not has_image:
+            yield event.plain_result("手办化2需要携带或引用图片，请附图后再发送：/手办化2")
+            return
+        async for res in self.gemini_image_tool(event, image_description=default_prompt2, use_reference_images=True, mode="edit"):
             yield res
 
     @filter.command("aiimg帮助")
@@ -233,9 +273,10 @@ class GeminiImagePlugin(Star):
         """帮助：/aiimg帮助"""
         help_text = (
             "AI 图像命令：\n"
-            "- /aiimg生图 <提示词>  → 纯文本生图\n"
-            "- /aiimg改图 <提示词>  → 携带/引用图片后进行改图\n"
-            "- /aiimg手办化        → 携带/引用图片后，使用内置提示词进行手办化改图\n"
+            "- /生图 <提示词>  → 纯文本生图\n"
+            "- /改图 <提示词>  → 携带/引用图片后进行改图\n"
+            "- /手办化        → 携带/引用图片后，使用内置提示词进行手办化改图\n"
+            "- /手办化2       → 携带/引用图片后，使用内置提示词进行手办化改图（规则更严格）\n"
         )
         yield event.plain_result(help_text)
 
