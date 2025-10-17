@@ -13,10 +13,6 @@
 {
   "gcli2api_base_url": "http://127.0.0.1:7861",
   "gcli2api_api_password": "pwd",
-  "generation_path": "/v1beta/models/{model}:generateContent",
-  "edit_path": "/v1beta/models/{model}:generateContent",
-  "stream_generation_path": "/v1beta/models/{model}:streamGenerateContent",
-  "use_stream": true,
   "model_name": "gemini-2.5-flash-image",
   "max_retry_attempts": 3,
   "nap_server_address": "",

@@ -15,25 +15,16 @@ class GeminiImagePlugin(Star):
 
         # 仅 gcli2api 后端
         default_base = (config.get("gcli2api_base_url") or "http://127.0.0.1:7861").strip()
-        default_gen = "/v1beta/models/{model}:generateContent"
-        default_edit = "/v1beta/models/{model}:generateContent"
-        default_stream_gen = "/v1beta/models/{model}:streamGenerateContent"
-
+        # 固定端点（强制 v1beta），不再提供配置项
         self.api_base = default_base
-        self.generation_path = (config.get("generation_path") or default_gen).strip()
-        self.edit_path = (config.get("edit_path") or default_edit).strip()
-        self.stream_generation_path = (config.get("stream_generation_path") or default_stream_gen).strip()
-        self.append_alt_sse = bool(config.get("append_alt_sse", True))
+        self._GEN_PATH = "/v1beta/models/{model}:generateContent"
+        self._STREAM_GEN_PATH = "/v1beta/models/{model}:streamGenerateContent"
 
         # 模型与重试
         self.model_name = (config.get("model_name") or "gemini-2.5-flash-image").strip()
         self.max_retry_attempts = int(config.get("max_retry_attempts", 3))
-        self.use_stream = bool(config.get("use_stream", True))
-        # 生成参数与系统指令（可选）
-        self.temperature = config.get("temperature", 1.0)
-        self.top_p = config.get("top_p", 0.95)
-        self.max_output_tokens = int(config.get("max_output_tokens", 0))
-        self.system_instruction = (config.get("system_instruction") or "").strip()
+        # 固定策略：默认启用流式，附带 alt=sse；不提供可配置项
+        self.use_stream = True
 
         # gcli2api 鉴权（默认 pwd）
         self.gcli2api_api_password = (config.get("gcli2api_api_password") or "pwd").strip()
@@ -55,29 +46,10 @@ class GeminiImagePlugin(Star):
             if "model_name" in plugin_config:
                 self.model_name = str(plugin_config["model_name"]).strip() or self.model_name
                 logger.info(f"从全局配置加载 model_name: {self.model_name}")
-            if "generation_path" in plugin_config:
-                self.generation_path = str(plugin_config["generation_path"]).strip() or self.generation_path
-            if "edit_path" in plugin_config:
-                self.edit_path = str(plugin_config["edit_path"]).strip() or self.edit_path
-            if "stream_generation_path" in plugin_config:
-                self.stream_generation_path = str(plugin_config["stream_generation_path"]).strip() or self.stream_generation_path
-            if "use_stream" in plugin_config:
-                self.use_stream = bool(plugin_config["use_stream"]) if plugin_config["use_stream"] is not None else self.use_stream
+            # 不再加载端点与流式相关配置项（固定策略）
             if "gcli2api_api_password" in plugin_config:
                 self.gcli2api_api_password = str(plugin_config["gcli2api_api_password"]).strip() or self.gcli2api_api_password
-            if "append_alt_sse" in plugin_config:
-                self.append_alt_sse = bool(plugin_config["append_alt_sse"]) if plugin_config["append_alt_sse"] is not None else self.append_alt_sse
-            if "temperature" in plugin_config:
-                self.temperature = plugin_config.get("temperature", self.temperature)
-            if "top_p" in plugin_config:
-                self.top_p = plugin_config.get("top_p", self.top_p)
-            if "max_output_tokens" in plugin_config:
-                try:
-                    self.max_output_tokens = int(plugin_config.get("max_output_tokens", self.max_output_tokens))
-                except Exception:
-                    pass
-            if "system_instruction" in plugin_config:
-                self.system_instruction = str(plugin_config.get("system_instruction", self.system_instruction) or "")
+            # 不再加载生成参数与系统指令（固定策略）
         except Exception as e:
             logger.error(f"加载全局配置失败: {e}")
         finally:
@@ -126,7 +98,7 @@ class GeminiImagePlugin(Star):
                                 logger.warning(f"引用图片转 base64 失败: {e}")
 
         # 模式与端点选择（流式优先），编辑与生成均走 generateContent，仅差别为是否带参考图
-        endpoint_path = self.stream_generation_path if self.use_stream else self.generation_path
+        endpoint_path = self._STREAM_GEN_PATH if self.use_stream else self._GEN_PATH
 
         try:
             if self.use_stream:
@@ -139,13 +111,6 @@ class GeminiImagePlugin(Star):
                     endpoint_path=endpoint_path,
                     input_images_b64=input_images,
                     max_retry_attempts=self.max_retry_attempts,
-                    append_alt_sse=self.append_alt_sse,
-                    extra_generation_config={
-                        "temperature": self.temperature,
-                        "topP": self.top_p,
-                        "maxOutputTokens": self.max_output_tokens or None,
-                    },
-                    system_instruction=self.system_instruction or None,
                 )
                 # 流式失败则回退非流式
                 if not image_path:
@@ -155,15 +120,9 @@ class GeminiImagePlugin(Star):
                         api_keys=[self.gcli2api_api_password] if self.gcli2api_api_password else [""],
                         model=self.model_name,
                         api_base=self.api_base,
-                        endpoint_path=self.generation_path,
+                        endpoint_path=self._GEN_PATH,
                         input_images_b64=input_images,
                         max_retry_attempts=self.max_retry_attempts,
-                        extra_generation_config={
-                            "temperature": self.temperature,
-                            "topP": self.top_p,
-                            "maxOutputTokens": self.max_output_tokens or None,
-                        },
-                        system_instruction=self.system_instruction or None,
                     )
             else:
                 from .utils.gemini_images_api import generate_or_edit_image_gemini
@@ -175,12 +134,6 @@ class GeminiImagePlugin(Star):
                     endpoint_path=endpoint_path,
                     input_images_b64=input_images,
                     max_retry_attempts=self.max_retry_attempts,
-                    extra_generation_config={
-                        "temperature": self.temperature,
-                        "topP": self.top_p,
-                        "maxOutputTokens": self.max_output_tokens or None,
-                    },
-                    system_instruction=self.system_instruction or None,
                 )
 
             if not image_path:

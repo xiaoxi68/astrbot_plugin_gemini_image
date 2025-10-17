@@ -1,38 +1,9 @@
 {
-  
-  "generation_path": {
-    "description": "生图接口路径（gcli2api，支持 {model} 占位符）",
-    "type": "string",
-    "hint": "/v1beta/models/{model}:generateContent",
-    "default": "/v1beta/models/{model}:generateContent"
-  },
-  "edit_path": {
-    "description": "改图接口路径（gcli2api，同样使用 generateContent）",
-    "type": "string",
-    "hint": "/v1beta/models/{model}:generateContent（通过 contents 携带参考图）",
-    "default": "/v1beta/models/{model}:generateContent"
-  },
   "model_name": {
     "description": "模型名称",
     "type": "string",
     "hint": "如 gemini-2.5-flash-image",
     "default": "gemini-2.5-flash-image"
-  },
-  "use_stream": {
-    "description": "是否优先使用流式接口",
-    "type": "bool",
-    "default": true
-  },
-  "stream_generation_path": {
-    "description": "流式生图端点（支持 {model} 占位符）",
-    "type": "string",
-    "hint": "/v1beta/models/{model}:streamGenerateContent",
-    "default": "/v1beta/models/{model}:streamGenerateContent"
-  },
-  "append_alt_sse": {
-    "description": "流式请求追加 alt=sse 查询参数",
-    "type": "bool",
-    "default": true
   },
   "gcli2api_base_url": {
     "description": "gcli2api 基础地址",
@@ -48,26 +19,6 @@
     "description": "每个密钥的最大重试次数",
     "type": "int",
     "default": 3
-  },
-  "temperature": {
-    "description": "采样温度",
-    "type": "float",
-    "default": 1.0
-  },
-  "top_p": {
-    "description": "核采样 topP",
-    "type": "float",
-    "default": 0.95
-  },
-  "max_output_tokens": {
-    "description": "最大输出 tokens（可选）",
-    "type": "int",
-    "default": 0
-  },
-  "system_instruction": {
-    "description": "系统指令（将作为 systemInstruction 透传）",
-    "type": "text",
-    "default": ""
   },
   "nap_server_address": {
     "description": "Napcat 文件转发主机（可选）",
