@@ -24,15 +24,7 @@
 
 - `/gimg gen <描述>`：纯文本生图。
 - `/gimg edit <修改描述>`：基于消息中携带/引用的图片进行改图。
-- `/gconf model <模型名> [true]`：切换模型，`true` 表示保存为全局配置。
-- `/gconf baseurl <URL> [true]`：切换 gcli2api Base，`true` 表示保存为全局配置。
-
-### LLM 工具
-
-- `gemini-image`：供 AstrBot LLM 调用，入参：
-  - `image_description: str`
-  - `use_reference_images: bool = True`
-  - `mode: "auto" | "generate" | "edit"`
+  （配置修改请在 AstrBot 插件设置中进行，无需命令）
 
 ### 发送到 QQ
 
@@ -47,7 +39,7 @@
 
 ### 设计说明
 
-- 遵循 AstrBot 插件规范：`metadata.yaml` + `@register` + `filter.command`/`llm_tool`。
+- 遵循 AstrBot 插件规范：`metadata.yaml` + `@register` + `filter.command`。
 - 扩展性：`utils/gemini_images_api.py` 封装 API 调用，端点与模型可配置。
 - 解耦：业务逻辑与网络请求分离，专注 gcli2api 转发与 AstrBot 交互。
 - 开闭原则：新增模型/路径仅需修改配置或替换 API 客户端，无需改动指令/对外接口。

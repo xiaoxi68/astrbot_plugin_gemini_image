@@ -67,10 +67,9 @@ class GeminiImagePlugin(Star):
             logger.warning(f"回退本地文件发送，原因: {e}")
             return Image.fromFileSystem(image_path)
 
-    @llm_tool(name="gemini-image")
     async def gemini_image_tool(self, event: AstrMessageEvent, image_description: str, use_reference_images: bool = True, mode: str = "auto"):
         """
-        Generate or edit images via Gemini Images API (official format).
+        Generate or edit images via gcli2api endpoints.
         If images exist in the message/reply and use_reference_images=True, will include them.
         mode: "auto" | "generate" | "edit". When "auto", edit if references provided else generate.
         """
@@ -172,45 +171,4 @@ class GeminiImagePlugin(Star):
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=True, mode="edit"):
             yield res
 
-    @filter.command_group("gconf")
-    def gconf(self):
-        """Gemini 插件快速配置命令组"""
-        pass
-
-    @gconf.command("model")
-    async def switch_model(self, event: AstrMessageEvent, new_model: str = None, save_global: str = "false"):
-        """切换模型：/gconf model <模型名> [true 保存为全局]"""
-        await self._load_global_config()
-        if not new_model:
-            yield event.plain_result(f"当前模型: {self.model_name}\n示例：/gconf model gemini-2.5-flash-image")
-            return
-        self.model_name = new_model.strip()
-        if save_global.lower() == "true":
-            try:
-                plugin_config = await sp.global_get("gemini-image", {})
-                plugin_config["model_name"] = self.model_name
-                await sp.global_put("gemini-image", plugin_config)
-                yield event.plain_result(f"已将模型保存为全局：{self.model_name}")
-                return
-            except Exception as e:
-                logger.warning(f"保存全局模型失败: {e}")
-        yield event.plain_result(f"本会话已切换模型：{self.model_name}")
-
-    @gconf.command("baseurl")
-    async def switch_baseurl(self, event: AstrMessageEvent, new_base: str = None, save_global: str = "false"):
-        """切换 API Base：/gconf baseurl <URL> [true 保存为全局]"""
-        await self._load_global_config()
-        if not new_base:
-            yield event.plain_result(f"当前 API Base: {self.api_base}")
-            return
-        self.api_base = new_base.strip()
-        if save_global.lower() == "true":
-            try:
-                plugin_config = await sp.global_get("gemini-image", {})
-                plugin_config["gcli2api_base_url"] = self.api_base
-                await sp.global_put("gemini-image", plugin_config)
-                yield event.plain_result(f"已将 gcli2api Base 保存为全局：{self.api_base}")
-                return
-            except Exception as e:
-                logger.warning(f"保存全局 API Base 失败: {e}")
-        yield event.plain_result(f"本会话已切换 API Base：{self.api_base}")
+    # 已移除 gconf 指令组，配置请在 AstrBot 插件设置中修改
