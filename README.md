@@ -43,7 +43,7 @@
 
 - 端点：`/v1beta/models/{model}:generateContent`（非流式），`/v1beta/models/{model}:streamGenerateContent`（流式，默认附加 `?alt=sse`）。
 - 鉴权：若配置了 `gcli2api_api_password`，将使用请求头 `x-goog-api-key: <password>`；也可通过 URL `?key=`（插件默认用请求头）。
-- 负载：`contents=[{role:user, parts:[{text}, {inline_data}...]}]`，与官方 SDK 示例一致；改图时将用户图片转为 inline_data 放入 parts。
+- 负载：`contents=[{role:user, parts:[{text}, {inlineData}...]}]`，与官方 SDK 示例一致；改图时将用户图片转为 inlineData 放入 parts。
 
 ### 设计说明
 

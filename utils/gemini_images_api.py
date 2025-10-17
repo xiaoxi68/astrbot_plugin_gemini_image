@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import json
-import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -96,8 +95,6 @@ async def generate_or_edit_image_gemini(
     input_images_b64: Optional[List[str]] = None,
     max_retry_attempts: int = 3,
     timeout_seconds: int = 60,
-    extra_generation_config: Optional[Dict] = None,
-    system_instruction: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     使用 gcli2api 的 generateContent 接口生图/改图（通过 parts 注入图片）。
@@ -158,27 +155,6 @@ async def generate_or_edit_image_gemini(
                     }
                 ]
             }
-
-            # 附加 systemInstruction
-            if system_instruction:
-                payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
-
-            # 附加温度/TopP/MaxTokens
-            if extra_generation_config:
-                gen = payload.get("generationConfig", {})
-                gen2 = payload.get("generation_config", {})
-                if extra_generation_config.get("temperature") is not None:
-                    gen["temperature"] = extra_generation_config["temperature"]
-                    gen2["temperature"] = extra_generation_config["temperature"]
-                if extra_generation_config.get("topP") is not None:
-                    gen["topP"] = extra_generation_config["topP"]
-                    gen2["top_p"] = extra_generation_config["topP"]
-                mot = extra_generation_config.get("maxOutputTokens")
-                if mot:
-                    gen["maxOutputTokens"] = mot
-                    gen2["max_output_tokens"] = mot
-                payload["generationConfig"] = gen
-                payload["generation_config"] = gen2
 
             try:
                 async with httpx.AsyncClient(timeout=timeout_seconds) as client:
@@ -242,7 +218,7 @@ async def generate_or_edit_image_gemini(
 
 
 async def _parse_generate_content_json_for_image(data: dict) -> Tuple[Optional[str], Optional[str]]:
-    """从 generateContent 风格响应解析 inline_data 图片，返回 (url, path)"""
+    """从 generateContent 风格响应解析 inlineData 图片，返回 (url, path)"""
     image_path = None
     image_url = None
     try:
@@ -270,9 +246,6 @@ async def generate_or_edit_image_gemini_stream(
     input_images_b64: Optional[List[str]] = None,
     max_retry_attempts: int = 3,
     timeout_seconds: int = 60,
-    append_alt_sse: bool = True,
-    extra_generation_config: Optional[Dict] = None,
-    system_instruction: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     调用流式接口（streamGenerateContent）。收到第一帧图片即返回。
@@ -294,8 +267,7 @@ async def generate_or_edit_image_gemini_stream(
                 await asyncio.sleep(min(2 ** attempt, 10))
 
             use_query_key = True if current_key else False
-            extra_q = {"alt": "sse"} if append_alt_sse else None
-            url = _build_url(api_base, endpoint_path, current_key, model, use_query_key, extra_q)
+            url = _build_url(api_base, endpoint_path, current_key, model, use_query_key, {"alt": "sse"})
             headers = {"Content-Type": "application/json"}
             if current_key:
                 headers["x-goog-api-key"] = current_key
@@ -318,24 +290,6 @@ async def generate_or_edit_image_gemini_stream(
             payload: Dict = {
                 "contents": [{"role": "user", "parts": parts}]
             }
-
-            if system_instruction:
-                payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
-            if extra_generation_config:
-                gen = payload.get("generationConfig", {})
-                gen2 = payload.get("generation_config", {})
-                if extra_generation_config.get("temperature") is not None:
-                    gen["temperature"] = extra_generation_config["temperature"]
-                    gen2["temperature"] = extra_generation_config["temperature"]
-                if extra_generation_config.get("topP") is not None:
-                    gen["topP"] = extra_generation_config["topP"]
-                    gen2["top_p"] = extra_generation_config["topP"]
-                mot = extra_generation_config.get("maxOutputTokens")
-                if mot:
-                    gen["maxOutputTokens"] = mot
-                    gen2["max_output_tokens"] = mot
-                payload["generationConfig"] = gen
-                payload["generation_config"] = gen2
 
             try:
                 async with httpx.AsyncClient(timeout=timeout_seconds) as client:
