@@ -15,6 +15,26 @@
     "type": "string",
     "default": "pwd"
   },
+  "group_control_mode": {
+    "description": "群控制模式：off/whitelist/blacklist",
+    "type": "string",
+    "default": "off"
+  },
+  "group_list": {
+    "description": "群白/黑名单列表（群号字符串）",
+    "type": "list",
+    "default": []
+  },
+  "group_rate_window_seconds": {
+    "description": "群调用限流周期（秒）",
+    "type": "int",
+    "default": 3600
+  },
+  "group_rate_max_calls": {
+    "description": "单群每周期最大调用次数",
+    "type": "int",
+    "default": 10
+  },
   "temperature": {
     "description": "采样温度 (0.0-2.0)",
     "type": "float",

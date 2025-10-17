@@ -34,6 +34,20 @@ class GeminiImagePlugin(Star):
         # gcli2api 鉴权（默认 pwd）
         self.gcli2api_api_password = (config.get("gcli2api_api_password") or "pwd").strip()
 
+        # 群控制与限流
+        self.group_control_mode = (config.get("group_control_mode") or "off").strip().lower()
+        self.group_list = list(config.get("group_list", []))
+        try:
+            self.group_rate_window_seconds = int(config.get("group_rate_window_seconds", 3600))
+        except Exception:
+            self.group_rate_window_seconds = 3600
+        try:
+            self.group_rate_max_calls = int(config.get("group_rate_max_calls", 10))
+        except Exception:
+            self.group_rate_max_calls = 10
+        # 运行时计数：group_id -> {"window_start": float, "count": int}
+        self._group_call_bucket = {}
+
         # Napcat 文件转发（可选）
         self.nap_server_address = config.get("nap_server_address")
         self.nap_server_port = config.get("nap_server_port")
@@ -54,6 +68,21 @@ class GeminiImagePlugin(Star):
             # 不再加载端点与流式相关配置项（固定策略）
             if "gcli2api_api_password" in plugin_config:
                 self.gcli2api_api_password = str(plugin_config["gcli2api_api_password"]).strip() or self.gcli2api_api_password
+            # 群控制
+            if "group_control_mode" in plugin_config:
+                self.group_control_mode = str(plugin_config.get("group_control_mode", self.group_control_mode) or "").strip().lower()
+            if "group_list" in plugin_config and isinstance(plugin_config.get("group_list"), list):
+                self.group_list = list(plugin_config.get("group_list", self.group_list))
+            if "group_rate_window_seconds" in plugin_config:
+                try:
+                    self.group_rate_window_seconds = int(plugin_config.get("group_rate_window_seconds", self.group_rate_window_seconds))
+                except Exception:
+                    pass
+            if "group_rate_max_calls" in plugin_config:
+                try:
+                    self.group_rate_max_calls = int(plugin_config.get("group_rate_max_calls", self.group_rate_max_calls))
+                except Exception:
+                    pass
             # 重新加载温度配置（其余生成参数固定不提供）
             if "temperature" in plugin_config:
                 try:
@@ -64,6 +93,45 @@ class GeminiImagePlugin(Star):
             logger.error(f"加载全局配置失败: {e}")
         finally:
             self._global_config_loaded = True
+
+    def _check_group_access(self, event: AstrMessageEvent) -> Optional[str]:
+        """检查群白/黑名单与限流，返回错误提示或 None 允许通过"""
+        try:
+            gid = None
+            try:
+                gid = event.get_group_id()  # 群聊返回群号，私聊返回 None
+            except Exception:
+                gid = None
+
+            # 白/黑名单
+            mode = self.group_control_mode
+            if gid:
+                if mode == "whitelist" and gid not in self.group_list:
+                    return "当前群未被授权使用本插件"
+                if mode == "blacklist" and gid in self.group_list:
+                    return "当前群已被限制使用本插件"
+
+                # 限流：仅对群聊生效
+                import time
+                now = time.time()
+                b = self._group_call_bucket.get(gid, {"window_start": now, "count": 0})
+                window_start = b.get("window_start", now)
+                count = int(b.get("count", 0))
+                if now - window_start >= self.group_rate_window_seconds:
+                    window_start = now
+                    count = 0
+                if count >= self.group_rate_max_calls:
+                    return "本群调用已达上限，请稍后再试"
+                # 预占位+1（通过后真正执行业务）
+                b["window_start"], b["count"] = window_start, count + 1
+                self._group_call_bucket[gid] = b
+            else:
+                # 私聊不做名单与限流限制
+                pass
+        except Exception:
+            # 出错不拦截
+            return None
+        return None
 
     async def send_image_with_callback_api(self, image_path: str) -> Image:
         callback_api_base = self.context.get_config().get("callback_api_base")
@@ -170,12 +238,21 @@ class GeminiImagePlugin(Star):
     @filter.command("生图")
     async def cmd_generate(self, event: AstrMessageEvent, *, prompt: str):
         """生图：/生图 <提示词>"""
+        # 群控制与限流
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=False, mode="generate"):
             yield res
 
     @filter.command("改图")
     async def cmd_edit(self, event: AstrMessageEvent, *, prompt: str):
         """改图（需携带/引用图片）：/改图 <提示词>"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
         # 如果未携带/引用图片，提示用户
         has_image = False
         if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
@@ -199,6 +276,10 @@ class GeminiImagePlugin(Star):
     @filter.command("手办化")
     async def cmd_figure(self, event: AstrMessageEvent):
         """手办化（需携带/引用图片）：/手办化"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
         default_prompt = (
             "Create a highly realistic 1/7 scale commercialized figure based on the illustration’s adult character, "
             "ensuring the appearance and content are safe, healthy, and free from any inappropriate elements. "
@@ -231,6 +312,10 @@ class GeminiImagePlugin(Star):
     @filter.command("手办化2")
     async def cmd_figure2(self, event: AstrMessageEvent):
         """手办化2（需携带/引用图片）：/手办化2"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
         default_prompt2 = (
             "Your primary mission is to convert the subject from the user's photo into a **photorealistic, ultra-high-resolution miniature figure**, presented in its commercial packaging.  \n"
             "The result must be **sharp, crystal-clear, and professional product photography quality**, with **no blurriness or distortion**.\n\n"
