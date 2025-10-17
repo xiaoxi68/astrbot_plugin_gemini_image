@@ -154,21 +154,76 @@ class GeminiImagePlugin(Star):
             logger.error(f"Gemini 生图/改图异常: {e}")
             yield event.plain_result(f"图像处理失败: {str(e)}")
 
-    @filter.command_group("gimg")
-    def gimg(self):
-        """Gemini 生图/改图命令组"""
-        pass
-
-    @gimg.command("gen")
+    @filter.command("aiimg生图")
     async def cmd_generate(self, event: AstrMessageEvent, *, prompt: str):
-        """生成图片：/gimg gen <描述>"""
+        """生图：/aiimg生图 <提示词>"""
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=False, mode="generate"):
             yield res
 
-    @gimg.command("edit")
+    @filter.command("aiimg改图")
     async def cmd_edit(self, event: AstrMessageEvent, *, prompt: str):
-        """根据消息中的图片改图：/gimg edit <修改描述>（需携带/引用图片）"""
+        """改图（需携带/引用图片）：/aiimg改图 <提示词>"""
+        # 如果未携带/引用图片，提示用户
+        has_image = False
+        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
+            for comp in event.message_obj.message:
+                if isinstance(comp, Image):
+                    has_image = True
+                    break
+                if isinstance(comp, Reply) and comp.chain:
+                    for reply_comp in comp.chain:
+                        if isinstance(reply_comp, Image):
+                            has_image = True
+                            break
+                if has_image:
+                    break
+        if not has_image:
+            yield event.plain_result("请先携带或引用一张图片后，再使用：/aiimg改图 <提示词>")
+            return
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=True, mode="edit"):
             yield res
+
+    @filter.command("aiimg手办化")
+    async def cmd_figure(self, event: AstrMessageEvent):
+        """手办化（需携带/引用图片）：/aiimg手办化"""
+        default_prompt = (
+            "Create a highly realistic 1/7 scale commercialized figure based on the illustration’s adult character, "
+            "ensuring the appearance and content are safe, healthy, and free from any inappropriate elements. "
+            "Render the figure in a detailed, lifelike style and environment, placed on a shelf inside an ultra-realistic figure display cabinet, "
+            "mounted on a circular transparent acrylic base without any text. Maintain highly precise details in texture, material, and paintwork to enhance realism. "
+            "The cabinet scene should feature a natural depth of field with a smooth transition between foreground and background for a realistic photographic look. "
+            "Lighting should appear natural and adaptive to the scene, automatically adjusting based on the overall composition instead of being locked to a specific direction, "
+            "simulating the quality and reflection of real commercial photography. Other shelves in the cabinet should contain different figures which are slightly blurred due to being out of focus, enhancing spatial realism and depth."
+        )
+        # 检查是否包含图片
+        has_image = False
+        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
+            for comp in event.message_obj.message:
+                if isinstance(comp, Image):
+                    has_image = True
+                    break
+                if isinstance(comp, Reply) and comp.chain:
+                    for reply_comp in comp.chain:
+                        if isinstance(reply_comp, Image):
+                            has_image = True
+                            break
+                if has_image:
+                    break
+        if not has_image:
+            yield event.plain_result("手办化需要携带或引用图片，请附图后再发送：/aiimg手办化")
+            return
+        async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
+            yield res
+
+    @filter.command("aiimg帮助")
+    async def cmd_help(self, event: AstrMessageEvent):
+        """帮助：/aiimg帮助"""
+        help_text = (
+            "AI 图像命令：\n"
+            "- /aiimg生图 <提示词>  → 纯文本生图\n"
+            "- /aiimg改图 <提示词>  → 携带/引用图片后进行改图\n"
+            "- /aiimg手办化        → 携带/引用图片后，使用内置提示词进行手办化改图\n"
+        )
+        yield event.plain_result(help_text)
 
     # 已移除 gconf 指令组，配置请在 AstrBot 插件设置中修改
