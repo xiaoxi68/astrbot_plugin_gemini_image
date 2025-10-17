@@ -37,7 +37,7 @@
     "default": 10
   },
   "temperature": {
-    "description": "采样温度 (0.0-2.0)",
+    "description": "采样温度 (0.0-2.0) 推荐0.7/1.0",
     "type": "float",
     "default": 1.0
   },

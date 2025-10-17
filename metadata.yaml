@@ -1,5 +1,5 @@
 name: gemini-image # 这是你的插件的唯一识别名。
-desc: 通过 gcli2api 对接 Gemini 生图/改图并发送到 QQ # 插件简短描述
-version: v0.3.0 # 插件版本号
-author: Codex # 作者
-repo: https://github.com/astrbot/astrbot-plugin-gemini-image # 插件的仓库地址（占位）
+desc: 通过 gcli2api(gemini api) 对接 Gemini 生图/改图并发送到 QQ # 插件简短描述
+version: v0.4.0 # 插件版本号
+author: 薄暝 # 作者
+repo: https://github.com/xiaoxi68t/astrbot-plugin-gemini-image # 插件的仓库地址（占位）
