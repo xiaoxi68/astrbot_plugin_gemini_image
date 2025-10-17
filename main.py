@@ -282,13 +282,12 @@ class GeminiImagePlugin(Star):
             yield event.plain_result(err)
             return
         default_prompt = (
-            "Create a highly realistic 1/7 scale commercialized figure based on the illustration’s adult character, "
-            "ensuring the appearance and content are safe, healthy, and free from any inappropriate elements. "
-            "Render the figure in a detailed, lifelike style and environment, placed on a shelf inside an ultra-realistic figure display cabinet, "
-            "mounted on a circular transparent acrylic base without any text. Maintain highly precise details in texture, material, and paintwork to enhance realism. "
-            "The cabinet scene should feature a natural depth of field with a smooth transition between foreground and background for a realistic photographic look. "
-            "Lighting should appear natural and adaptive to the scene, automatically adjusting based on the overall composition instead of being locked to a specific direction, "
-            "simulating the quality and reflection of real commercial photography. Other shelves in the cabinet should contain different figures which are slightly blurred due to being out of focus, enhancing spatial realism and depth."
+            "将画面中的角色重塑为顶级收藏级树脂手办，全身动态姿势，置于角色主题底座；"
+            "高精度材质，手工涂装，肌肤纹理与服装材质真实分明。"
+            "戏剧性硬光为主光源，凸显立体感，无过曝；强效补光消除死黑，细节完整可见。"
+            "背景为窗边景深模糊，侧后方隐约可见产品包装盒。"
+            "博物馆级摄影质感，全身细节无损，面部结构精准。"
+            "禁止：任何2D元素或照搬原图、塑料感、面部模糊、五官错位、细节丢失。"
         )
         # 检查是否包含图片
         has_image = False
@@ -318,21 +317,13 @@ class GeminiImagePlugin(Star):
             yield event.plain_result(err)
             return
         default_prompt2 = (
-            "Your primary mission is to convert the subject from the user's photo into a **photorealistic, ultra-high-resolution miniature figure**, presented in its commercial packaging.  \n"
-            "The result must be **sharp, crystal-clear, and professional product photography quality**, with **no blurriness or distortion**.\n\n"
-            "**Core Directive: Subject Analysis & Priority Assignment (CRITICAL FIRST STEP)**  \n"
-            "1. Identify the subject of the image.  \n"
-            "2. Apply the correct rule set:  \n\n"
-            "* **RULE SET A - Person, creature, or animal:**  \n"
-            "   - **If a face is visible:** Your top priority is **Likeness**. Render the face in sharp detail, with accurate proportions.  \n"
-            "   - **If NO face is visible (e.g., back view):** Your top priority is **Pose and Form Fidelity**. **Do NOT invent or add a face** — faithfully preserve the back-view pose from the source photo.  \n\n"
-            "* **RULE SET B - Vehicle:** Prioritize exact **Form, Proportions, Surface Finish, and Key Details**.  \n\n"
-            "* **RULE SET C - Building/structure:** Prioritize **Architectural Integrity** (geometry, materials, fine details).  \n\n"
-            "**Scene Details:**  \n"
-            "1. **The Model:** The miniature figure must be **highly detailed, sharp, and exactly match the pose from the input photo**.  \n"
-            "2. **The Base:** A clean, simple display base.  \n"
-            "3. **The Packaging:** Behind the model, show a collector’s style box featuring the subject.  \n"
-            "4. **Environment:** A professional, well-lit indoor studio setting, **sharp focus, no blur, no noise**."
+            "Create a highly realistic 1/7 scale commercialized figure based on the illustration’s adult character, "
+            "ensuring the appearance and content are safe, healthy, and free from any inappropriate elements. "
+            "Render the figure in a detailed, lifelike style and environment, placed on a shelf inside an ultra-realistic figure display cabinet, "
+            "mounted on a circular transparent acrylic base without any text. Maintain highly precise details in texture, material, and paintwork to enhance realism. "
+            "The cabinet scene should feature a natural depth of field with a smooth transition between foreground and background for a realistic photographic look. "
+            "Lighting should appear natural and adaptive to the scene, automatically adjusting based on the overall composition instead of being locked to a specific direction, "
+            "simulating the quality and reflection of real commercial photography. Other shelves in the cabinet should contain different figures which are slightly blurred due to being out of focus, enhancing spatial realism and depth."
         )
         # 检查是否包含图片
         has_image = False
