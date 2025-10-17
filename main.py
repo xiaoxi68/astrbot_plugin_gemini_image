@@ -3,6 +3,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger, sp
 from astrbot.api.all import *
 from astrbot.core.message.components import Reply
+from typing import Optional
 
 from .utils.gemini_images_api import generate_or_edit_image_gemini
 from .utils.file_send_server import send_file
