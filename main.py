@@ -345,6 +345,44 @@ class GeminiImagePlugin(Star):
         async for res in self.gemini_image_tool(event, image_description=default_prompt2, use_reference_images=True, mode="edit"):
             yield res
 
+    @filter.command("coser化")
+    async def cmd_coser(self, event: AstrMessageEvent):
+        """coser化（需携带/引用图片）：/coser化"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "将插画风格的人物转化为高度真实的照片效果，模拟iPhone自拍的随性风格。画面需呈现以下特征： "
+            "构图：避免刻意摆拍，主体不突出、无中心构图，模仿手持手机时无意间抓拍的松散感。 "
+            "画质：轻微动态模糊（如手臂移动或转身时的残影），低锐度，适当添加噪点以匹配手机夜拍质感。 "
+            "光线：仅依赖路灯的漫射光，避免均匀打光，保留明暗过渡的自然阴影。 "
+            "比例：严格保持9:16竖版比例，符合手机屏幕尺寸。 "
+            "去AI感：杜绝完美对称、超现实细节或过度平滑的皮肤纹理，需模拟真人拍摄的瑕疵（如镜头炫光、焦点不实）。 "
+            "关键细节： 背景建议为街道、室内玄关等生活化场景，避免纯色或虚拟布景。 "
+            "人物表情放松（如低头看手机、侧脸回眸等），衣着为图片衣服。 "
+            "可添加轻微镜头畸变或iPhone特有的HDR色调倾向。"
+        )
+        # 检查是否包含图片
+        has_image = False
+        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
+            for comp in event.message_obj.message:
+                if isinstance(comp, Image):
+                    has_image = True
+                    break
+                if isinstance(comp, Reply) and comp.chain:
+                    for reply_comp in comp.chain:
+                        if isinstance(reply_comp, Image):
+                            has_image = True
+                            break
+                if has_image:
+                    break
+        if not has_image:
+            yield event.plain_result("coser化需要携带或引用图片，请附图后再发送：/coser化")
+            return
+        async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
+            yield res
+
     @filter.command("aiimg帮助")
     async def cmd_help(self, event: AstrMessageEvent):
         """帮助：/aiimg帮助"""
@@ -354,6 +392,7 @@ class GeminiImagePlugin(Star):
             "- 改图 <提示词>  → 携带/引用图片后进行改图\n"
             "- 手办化        → 携带/引用图片后，使用内置提示词进行手办化改图\n"
             "- 手办化2       → 携带/引用图片后，使用内置提示词进行手办化改图\n"
+            "- coser化       → 携带/引用图片后，使用内置提示词进行 coser 化改图\n"
         )
         yield event.plain_result(help_text)
 
