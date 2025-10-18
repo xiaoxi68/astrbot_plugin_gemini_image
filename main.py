@@ -325,18 +325,12 @@ class GeminiImagePlugin(Star):
             yield event.plain_result(err)
             return
         default_prompt = (
-        default_prompt = (
-            "(masterpiece, best quality, photorealistic, hyper-realistic, 8K, RAW photo), "
-            "a hyper-realistic photograph of a real-life Asian cosplayer, perfectly embodying the character from the uploaded image. "
-            "The final image must be a photograph, not an illustration. "
-            "Emulate the candid, spontaneous style of an iPhone selfie. Strictly maintain a 9:16 vertical aspect ratio. "
-            "The character's face must be rendered as a hyper-realistic human, completely shedding any anime or cartoon features. Pay attention to natural skin texture, subtle imperfections, and realistic lighting. "
-            "Shot on a professional DSLR like a Canon EOS R5 with an 85mm f/1.2 lens. "
-            "Lighting should be moody and natural, primarily from a single source like a street lamp, creating soft shadows and a cinematic feel. "
-            "Introduce subtle, realistic imperfections: slight motion blur on a hand or hair, a touch of film grain, and maybe a slight lens flare from a light source. "
-            "The background is a natural, everyday urban night scene, like a quiet street or entryway, with a shallow depth of field. "
-            "The character's expression should be relaxed and unposed, such as looking down at a phone or a casual glance sideways. "
-            "**Crucial Prohibitions (Negative Prompt):** prohibit: anime, cartoon, 3D render, illustration, manga, CGI, plastic-like skin, overly smooth features, symmetrical face, 2D elements. The output must look like a real photo of a real person."
+            "(candid street photography, RAW photo, 8k, photorealistic), "
+            "A hyper-realistic photograph of a top-tier Asian cosplayer, capturing a spontaneous moment at night. The style is '2.5D' -- a perfect blend of photorealism and idealized anime aesthetics. "
+            "**Face & Makeup:** The face must be the central focus, with a **delicate, slender, V-shaped 'melon-seed' face shape**. The expression should be a **gentle, subtle smile, with a calm and serene feeling**. The makeup should be skillful but not heavy. "
+            "**Lighting & Atmosphere:** The scene is lit by the **ambient glow of streetlights**, creating natural shadows without being overly harsh. A **small, natural lens flare** from the lights is acceptable. Embrace imperfections like slight motion blur and subtle film grain. "
+            "**Composition:** 9:16 vertical aspect ratio. The composition should feel casual and off-center. "
+            "**Crucial Prohibitions (Negative Prompt):** prohibit: 3D render, CGI, painting, illustration, cartoon, anime. Also prohibit: studio lighting, soft lighting, airbrushed skin, doll-like appearance, exaggerated smile, open mouth, **holding a phone, taking a selfie**."
         )
         if not self._check_has_image(event):
             yield event.plain_result("coser化需要携带或引用图片，请附图后再发送：/coser化")
