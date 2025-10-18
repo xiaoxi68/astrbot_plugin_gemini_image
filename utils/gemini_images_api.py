@@ -95,6 +95,7 @@ async def generate_or_edit_image_gemini(
     input_images_b64: Optional[List[str]] = None,
     max_retry_attempts: int = 3,
     timeout_seconds: int = 60,
+    temperature: Optional[float] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     使用 gcli2api 的 generateContent 接口生图/改图（通过 parts 注入图片）。
@@ -155,6 +156,14 @@ async def generate_or_edit_image_gemini(
                     }
                 ]
             }
+            # 附加温度（仅传入 temperature，不包含 topP 等）
+            if temperature is not None:
+                gen = payload.get("generationConfig", {})
+                gen2 = payload.get("generation_config", {})
+                gen["temperature"] = temperature
+                gen2["temperature"] = temperature
+                payload["generationConfig"] = gen
+                payload["generation_config"] = gen2
 
             try:
                 async with httpx.AsyncClient(timeout=timeout_seconds) as client:
