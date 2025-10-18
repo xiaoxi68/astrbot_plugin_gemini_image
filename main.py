@@ -325,12 +325,13 @@ class GeminiImagePlugin(Star):
             yield event.plain_result(err)
             return
         default_prompt = (
-            "(candid street photography, RAW photo, 8k, photorealistic), "
-            "A hyper-realistic photograph of a top-tier Asian cosplayer, capturing a spontaneous moment at night. The style is '2.5D' -- a perfect blend of photorealism and idealized anime aesthetics. "
-            "**Face & Makeup:** The face must be the central focus, with a **delicate, slender, V-shaped 'melon-seed' face shape**. The expression should be a **gentle, subtle smile, with a calm and serene feeling**. The makeup should be skillful but not heavy. "
-            "**Lighting & Atmosphere:** The scene is lit by the **ambient glow of streetlights**, creating natural shadows without being overly harsh. A **small, natural lens flare** from the lights is acceptable. Embrace imperfections like slight motion blur and subtle film grain. "
-            "**Composition:** 9:16 vertical aspect ratio. The composition should feel casual and off-center. "
-            "**Crucial Prohibitions (Negative Prompt):** prohibit: 3D render, CGI, painting, illustration, cartoon, anime. Also prohibit: studio lighting, soft lighting, airbrushed skin, doll-like appearance, exaggerated smile, open mouth, **holding a phone, taking a selfie**."
+            "Your task is to generate a photorealistic image of a real-life cosplayer, perfectly capturing the mood and aesthetic of the ideal example provided. "
+            "The uploaded anime image is **only a design reference** for the character's outfit, hairstyle, hair color, and eye color. **You must completely ignore the anime art style.** The final output must be a photograph of a real person. "
+            "**Style:** (masterpiece, best quality, 8k, RAW photo). A candid, unposed, street-style photograph. "
+            "**Camera & Lens:** Shot on a Fujifilm X-T4 with a 56mm f/1.2 lens. "
+            "**Lighting:** Moody, atmospheric night lighting from streetlights, creating a cinematic feel with a shallow depth of field. "
+            "**The Face (Highest Priority):** The face must be a perfect '2.5D' blend: photorealistic skin texture, but with an idealized anime facial structure. Replicate these key features from the reference: large but realistic eyes (like a cosplayer with circle lenses), a small delicate nose, and a slender V-shaped jawline. The expression should be calm and slightly melancholic. "
+            "**Crucial Prohibitions (Negative Prompt):** **prohibit: ANIME, MANGA, ILLUSTRATION, 2D, DRAWING, PAINTING, CARTOON, CGI, 3D RENDER.** Also prohibit: ugly, deformed, doll-like, airbrushed skin, studio lighting, face replacement, different person."
         )
         if not self._check_has_image(event):
             yield event.plain_result("coser化需要携带或引用图片，请附图后再发送：/coser化")
