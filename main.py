@@ -134,6 +134,20 @@ class GeminiImagePlugin(Star):
             return None
         return None
 
+    def _check_has_image(self, event: AstrMessageEvent) -> bool:
+        """检查消息或引用中是否包含图片"""
+        if not (hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message')):
+            return False
+        
+        message_components = event.message_obj.message
+        
+        # 检查消息体或引用链中是否存在任何 Image 组件
+        return any(
+            isinstance(comp, Image) or
+            (isinstance(comp, Reply) and comp.chain and any(isinstance(reply_comp, Image) for reply_comp in comp.chain))
+            for comp in message_components
+        )
+
     async def send_image_with_callback_api(self, image_path: str) -> Image:
         callback_api_base = self.context.get_config().get("callback_api_base")
         if not callback_api_base:
@@ -254,21 +268,7 @@ class GeminiImagePlugin(Star):
         if err:
             yield event.plain_result(err)
             return
-        # 如果未携带/引用图片，提示用户
-        has_image = False
-        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
-            for comp in event.message_obj.message:
-                if isinstance(comp, Image):
-                    has_image = True
-                    break
-                if isinstance(comp, Reply) and comp.chain:
-                    for reply_comp in comp.chain:
-                        if isinstance(reply_comp, Image):
-                            has_image = True
-                            break
-                if has_image:
-                    break
-        if not has_image:
+        if not self._check_has_image(event):
             yield event.plain_result("请先携带或引用一张图片后，再使用：/改图 <提示词>")
             return
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=True, mode="edit"):
@@ -289,21 +289,7 @@ class GeminiImagePlugin(Star):
             "博物馆级摄影质感，全身细节无损，面部结构精准。"
             "禁止：任何2D元素或照搬原图、塑料感、面部模糊、五官错位、细节丢失。"
         )
-        # 检查是否包含图片
-        has_image = False
-        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
-            for comp in event.message_obj.message:
-                if isinstance(comp, Image):
-                    has_image = True
-                    break
-                if isinstance(comp, Reply) and comp.chain:
-                    for reply_comp in comp.chain:
-                        if isinstance(reply_comp, Image):
-                            has_image = True
-                            break
-                if has_image:
-                    break
-        if not has_image:
+        if not self._check_has_image(event):
             yield event.plain_result("手办化需要携带或引用图片，请附图后再发送：/手办化")
             return
         async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
@@ -325,24 +311,32 @@ class GeminiImagePlugin(Star):
             "Lighting should appear natural and adaptive to the scene, automatically adjusting based on the overall composition instead of being locked to a specific direction, "
             "simulating the quality and reflection of real commercial photography. Other shelves in the cabinet should contain different figures which are slightly blurred due to being out of focus, enhancing spatial realism and depth."
         )
-        # 检查是否包含图片
-        has_image = False
-        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
-            for comp in event.message_obj.message:
-                if isinstance(comp, Image):
-                    has_image = True
-                    break
-                if isinstance(comp, Reply) and comp.chain:
-                    for reply_comp in comp.chain:
-                        if isinstance(reply_comp, Image):
-                            has_image = True
-                            break
-                if has_image:
-                    break
-        if not has_image:
+        if not self._check_has_image(event):
             yield event.plain_result("手办化2需要携带或引用图片，请附图后再发送：/手办化2")
             return
         async for res in self.gemini_image_tool(event, image_description=default_prompt2, use_reference_images=True, mode="edit"):
+            yield res
+
+    @filter.command("coser化")
+    async def cmd_coser(self, event: AstrMessageEvent):
+        """coser化（需携带/引用图片）：/coser化"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "Your task is to generate a photorealistic image of a real-life cosplayer, perfectly capturing the mood and aesthetic of the ideal example provided. "
+            "The uploaded anime image is **only a design reference** for the character's outfit, hairstyle, hair color, and eye color. **You must completely ignore the anime art style.** The final output must be a photograph of a real person. "
+            "**Style:** (masterpiece, best quality, 8k, RAW photo). A candid, unposed, street-style photograph. "
+            "**Camera & Lens:** Shot on a Fujifilm X-T4 with a 56mm f/1.2 lens. "
+            "**Lighting:** Moody, atmospheric night lighting from streetlights, creating a cinematic feel with a shallow depth of field. "
+            "**The Face (Highest Priority):** The face must be a perfect '2.5D' blend: photorealistic skin texture, but with an idealized anime facial structure. Replicate these key features from the reference: large but realistic eyes (like a cosplayer with circle lenses), a small delicate nose, and a slender V-shaped jawline. The expression should be calm and slightly melancholic. "
+            "**Crucial Prohibitions (Negative Prompt):** **prohibit: ANIME, MANGA, ILLUSTRATION, 2D, DRAWING, PAINTING, CARTOON, CGI, 3D RENDER.** Also prohibit: ugly, deformed, doll-like, airbrushed skin, studio lighting, face replacement, different person."
+        )
+        if not self._check_has_image(event):
+            yield event.plain_result("coser化需要携带或引用图片，请附图后再发送：/coser化")
+            return
+        async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
             yield res
 
     @filter.command("aiimg帮助")
@@ -354,6 +348,7 @@ class GeminiImagePlugin(Star):
             "- 改图 <提示词>  → 携带/引用图片后进行改图\n"
             "- 手办化        → 携带/引用图片后，使用内置提示词进行手办化改图\n"
             "- 手办化2       → 携带/引用图片后，使用内置提示词进行手办化改图\n"
+            "- coser化       → 携带/引用图片后，使用内置提示词进行 coser 化改图\n"
         )
         yield event.plain_result(help_text)
 
