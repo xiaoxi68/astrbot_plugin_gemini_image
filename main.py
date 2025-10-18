@@ -325,15 +325,18 @@ class GeminiImagePlugin(Star):
             yield event.plain_result(err)
             return
         default_prompt = (
-            "将插画风格的人物转化为高度真实的照片效果，模拟iPhone自拍的随性风格。画面需呈现以下特征： "
-            "构图：避免刻意摆拍，主体不突出、无中心构图，模仿手持手机时无意间抓拍的松散感。 "
-            "画质：轻微动态模糊（如手臂移动或转身时的残影），低锐度，适当添加噪点以匹配手机夜拍质感。 "
-            "光线：仅依赖路灯的漫射光，避免均匀打光，保留明暗过渡的自然阴影。 "
-            "比例：严格保持9:16竖版比例，符合手机屏幕尺寸。 "
-            "去AI感：杜绝完美对称、超现实细节或过度平滑的皮肤纹理，需模拟真人拍摄的瑕疵（如镜头炫光、焦点不实）。 "
-            "关键细节： 背景建议为街道、室内玄关等生活化场景，避免纯色或虚拟布景。 "
-            "人物表情放松（如低头看手机、侧脸回眸等），衣着为图片衣服。 "
-            "可添加轻微镜头畸变或iPhone特有的HDR色调倾向。"
+        default_prompt = (
+            "(masterpiece, best quality, photorealistic, hyper-realistic, 8K, RAW photo), "
+            "a hyper-realistic photograph of a real-life Asian cosplayer, perfectly embodying the character from the uploaded image. "
+            "The final image must be a photograph, not an illustration. "
+            "Emulate the candid, spontaneous style of an iPhone selfie. Strictly maintain a 9:16 vertical aspect ratio. "
+            "The character's face must be rendered as a hyper-realistic human, completely shedding any anime or cartoon features. Pay attention to natural skin texture, subtle imperfections, and realistic lighting. "
+            "Shot on a professional DSLR like a Canon EOS R5 with an 85mm f/1.2 lens. "
+            "Lighting should be moody and natural, primarily from a single source like a street lamp, creating soft shadows and a cinematic feel. "
+            "Introduce subtle, realistic imperfections: slight motion blur on a hand or hair, a touch of film grain, and maybe a slight lens flare from a light source. "
+            "The background is a natural, everyday urban night scene, like a quiet street or entryway, with a shallow depth of field. "
+            "The character's expression should be relaxed and unposed, such as looking down at a phone or a casual glance sideways. "
+            "**Crucial Prohibitions (Negative Prompt):** prohibit: anime, cartoon, 3D render, illustration, manga, CGI, plastic-like skin, overly smooth features, symmetrical face, 2D elements. The output must look like a real photo of a real person."
         )
         if not self._check_has_image(event):
             yield event.plain_result("coser化需要携带或引用图片，请附图后再发送：/coser化")
