@@ -2,8 +2,8 @@
   "model_name": {
     "description": "模型名称",
     "type": "string",
-    "hint": "如 gemini-2.5-flash-image",
-    "default": "gemini-2.5-flash-image"
+    "hint": "如 gemini-2.5-flash-image-preview",
+    "default": "gemini-2.5-flash-image-preview"
   },
   "gcli2api_base_url": {
     "description": "gcli2api 基础地址",
