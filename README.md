@@ -2,7 +2,7 @@
 
 - 标识名：`gemini-image`
 - 功能：通过 gcli2api 转发 Gemini 生图/改图，自动发送到 QQ（Napcat）。
-- 设计：模块化/可扩展，解耦 API 客户端，与 AstrBot 交互通过 `llm_tool` 与指令组。
+- 设计：模块化/可扩展，解耦 API 客户端，与 AstrBot 交互通过指令组。
 
 ### 安装与配置
 

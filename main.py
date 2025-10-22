@@ -4,12 +4,16 @@ from astrbot.api import logger, sp
 from astrbot.api.all import *
 from astrbot.core.message.components import Reply
 from typing import Optional
+import time
+import os
+from pathlib import Path
+import shutil
 
 from .utils.gemini_images_api import generate_or_edit_image_gemini
 from .utils.file_send_server import send_file
 
 
-@register("gemini-image", "Codex", "对接 gcli2api 的 Gemini 生图/改图并发送到 QQ", "0.3.0")
+@register("gemini-image", "薄暝", "对接 gcli2api 的 Gemini 生图/改图并发送到 QQ", "0.4.0")
 class GeminiImagePlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -153,6 +157,8 @@ class GeminiImagePlugin(Star):
         mode: "auto" | "generate" | "edit". When "auto", edit if references provided else generate.
         """
         await self._load_global_config()
+        # 尝试执行 images 目录定期清理
+        await self._maybe_cleanup_images()
 
         # gcli2api 模式：仅需 gcli2api_api_password（默认 pwd），无需官方 API Key
 
@@ -235,6 +241,48 @@ class GeminiImagePlugin(Star):
         except Exception as e:
             logger.error(f"Gemini 生图/改图异常: {e}")
             yield event.plain_result(f"图像处理失败: {str(e)}")
+
+    async def _maybe_cleanup_images(self):
+        """按配置每隔 N 天清理一次 images 目录（清空目录）。"""
+        try:
+            cfg = self.context.get_config() or {}
+            if not bool(cfg.get("images_cleanup_enabled", True)):
+                return
+            days = int(cfg.get("images_cleanup_interval_days", 3))
+            days = max(1, days)
+            interval = days * 86400
+            meta = await sp.global_get("gemini-image", {})
+            last_ts = float(meta.get("images_cleanup_last_ts", 0))
+            now = time.time()
+            if now - last_ts < interval:
+                return
+            # 执行清理
+            await self._cleanup_images_dir()
+            meta["images_cleanup_last_ts"] = now
+            await sp.global_put("gemini-image", meta)
+        except Exception as e:
+            logger.warning(f"images 清理调度失败: {e}")
+
+    async def _cleanup_images_dir(self):
+        try:
+            images_dir = Path(__file__).parent / "images"
+            if not images_dir.exists() or not images_dir.is_dir():
+                return
+            removed = 0
+            for p in images_dir.iterdir():
+                try:
+                    if p.is_file():
+                        p.unlink()
+                        removed += 1
+                    elif p.is_dir():
+                        shutil.rmtree(p, ignore_errors=True)
+                        removed += 1
+                except Exception as ie:
+                    logger.debug(f"删除 {p} 失败: {ie}")
+            if removed > 0:
+                logger.info(f"已清理 images 目录，共删除 {removed} 项")
+        except Exception as e:
+            logger.warning(f"清理 images 目录失败: {e}")
 
     @filter.command("生图")
     async def cmd_generate(self, event: AstrMessageEvent, *, prompt: str):

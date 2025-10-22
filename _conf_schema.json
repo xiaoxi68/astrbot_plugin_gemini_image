@@ -36,6 +36,16 @@
     "type": "int",
     "default": 10
   },
+  "images_cleanup_enabled": {
+    "description": "是否启用 images 目录定期清理",
+    "type": "bool",
+    "default": true
+  },
+  "images_cleanup_interval_days": {
+    "description": "images 目录清理周期（天）",
+    "type": "int",
+    "default": 3
+  },
   "temperature": {
     "description": "采样温度 (0.0-2.0) 推荐0.7/1.0",
     "type": "float",
