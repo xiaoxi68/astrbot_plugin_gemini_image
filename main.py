@@ -2,7 +2,7 @@ from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger, sp
 from astrbot.api.all import *
-from astrbot.core.message.components import Reply
+from astrbot.core.message.components import Reply, Plain
 from typing import Optional
 import time
 import os
@@ -184,6 +184,9 @@ class GeminiImagePlugin(Star):
         # 模式与端点选择（流式优先），编辑与生成均走 generateContent，仅差别为是否带参考图
         endpoint_path = self._STREAM_GEN_PATH if self.use_stream else self._GEN_PATH
 
+        # 记录开始时间
+        start_time = time.time()
+        
         try:
             if self.use_stream:
                 from .utils.gemini_images_api import generate_or_edit_image_gemini_stream
@@ -227,6 +230,9 @@ class GeminiImagePlugin(Star):
                 yield event.plain_result("图像生成失败，请检查 API 配置与模型名称。")
                 return
 
+            # 计算耗时
+            elapsed = time.time() - start_time
+
             # 可选：通过 Napcat 文件服务器中转
             if self.nap_server_address and self.nap_server_port:
                 try:
@@ -237,10 +243,15 @@ class GeminiImagePlugin(Star):
                     logger.warning(f"Napcat 文件中转失败，回退为本地发送: {e}")
 
             image_component = await self.send_image_with_callback_api(image_path)
-            yield event.chain_result([image_component])
+            
+            # 构建成功消息
+            success_msg = f"✅ 生成成功 ({elapsed:.2f}s)"
+            
+            yield event.chain_result([image_component, Plain(success_msg)])
         except Exception as e:
+            elapsed = time.time() - start_time
             logger.error(f"Gemini 生图/改图异常: {e}")
-            yield event.plain_result(f"图像处理失败: {str(e)}")
+            yield event.plain_result(f"❌ 生成失败 ({elapsed:.2f}s)\n原因: {str(e)}")
 
     async def _maybe_cleanup_images(self):
         """按配置每隔 N 天清理一次 images 目录（清空目录）。"""
@@ -292,6 +303,12 @@ class GeminiImagePlugin(Star):
         if err:
             yield event.plain_result(err)
             return
+        
+        # 先返回生成中提示
+        display_prompt = prompt[:20] + '...' if len(prompt) > 20 else prompt
+        yield event.plain_result(f"🎨 收到请求，正在生成 [{display_prompt}]...")
+        
+        # 然后执行生成并发送结果
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=False, mode="generate"):
             yield res
 
@@ -319,6 +336,12 @@ class GeminiImagePlugin(Star):
         if not has_image:
             yield event.plain_result("请先携带或引用一张图片后，再使用：/改图 <提示词>")
             return
+        
+        # 先返回生成中提示
+        display_prompt = prompt[:20] + '...' if len(prompt) > 20 else prompt
+        yield event.plain_result(f"🎨 收到请求，正在生成 [{display_prompt}]...")
+        
+        # 然后执行生成并发送结果
         async for res in self.gemini_image_tool(event, image_description=prompt, use_reference_images=True, mode="edit"):
             yield res
 
@@ -354,6 +377,11 @@ class GeminiImagePlugin(Star):
         if not has_image:
             yield event.plain_result("手办化需要携带或引用图片，请附图后再发送：/手办化")
             return
+        
+        # 先返回生成中提示
+        yield event.plain_result("🎨 收到请求，正在生成 [手办化]...")
+        
+        # 然后执行生成并发送结果
         async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
             yield res
 
