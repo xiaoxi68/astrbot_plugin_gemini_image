@@ -2,12 +2,20 @@ from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger, sp
 from astrbot.api.all import *
-from astrbot.core.message.components import Reply, Plain
+from astrbot.core.message.components import Reply, Plain, Image
 from typing import Optional
 import time
 import os
 from pathlib import Path
 import shutil
+import importlib
+
+try:
+    _command_module = importlib.import_module("astrbot.core.star.filter.command")
+    GreedyStr = getattr(_command_module, "GreedyStr")
+except Exception:  # AstrBot 未安装时的开发环境降级
+    class GreedyStr(str):
+        pass
 
 from .utils.gemini_images_api import generate_or_edit_image_gemini
 from .utils.file_send_server import send_file
@@ -35,6 +43,12 @@ class GeminiImagePlugin(Star):
             self.temperature = float(config.get("temperature", 1.0))
         except Exception:
             self.temperature = 1.0
+
+        # 请求超时时间（适配大图耗时场景）
+        try:
+            self.request_timeout_seconds = int(config.get("request_timeout_seconds", 300))
+        except Exception:
+            self.request_timeout_seconds = 300
 
         # gcli2api 鉴权（默认 pwd）
         self.gcli2api_api_password = (config.get("gcli2api_api_password") or "pwd").strip()
@@ -92,6 +106,11 @@ class GeminiImagePlugin(Star):
             if "temperature" in plugin_config:
                 try:
                     self.temperature = float(plugin_config.get("temperature", self.temperature))
+                except Exception:
+                    pass
+            if "request_timeout_seconds" in plugin_config:
+                try:
+                    self.request_timeout_seconds = int(plugin_config.get("request_timeout_seconds", self.request_timeout_seconds))
                 except Exception:
                     pass
         except Exception as e:
@@ -199,6 +218,7 @@ class GeminiImagePlugin(Star):
                     input_images_b64=input_images,
                     max_retry_attempts=self.max_retry_attempts,
                     temperature=self.temperature,
+                    timeout_seconds=self.request_timeout_seconds,
                 )
                 # 流式失败则回退非流式
                 if not image_path:
@@ -212,6 +232,7 @@ class GeminiImagePlugin(Star):
                         input_images_b64=input_images,
                         max_retry_attempts=self.max_retry_attempts,
                         temperature=self.temperature,
+                        timeout_seconds=self.request_timeout_seconds,
                     )
             else:
                 from .utils.gemini_images_api import generate_or_edit_image_gemini
@@ -224,6 +245,7 @@ class GeminiImagePlugin(Star):
                     input_images_b64=input_images,
                     max_retry_attempts=self.max_retry_attempts,
                     temperature=self.temperature,
+                    timeout_seconds=self.request_timeout_seconds,
                 )
 
             if not image_path:
@@ -296,7 +318,7 @@ class GeminiImagePlugin(Star):
             logger.warning(f"清理 images 目录失败: {e}")
 
     @filter.command("生图")
-    async def cmd_generate(self, event: AstrMessageEvent, *, prompt: str):
+    async def cmd_generate(self, event: AstrMessageEvent, *, prompt: GreedyStr):
         """生图：/生图 <提示词>"""
         # 群控制与限流
         err = self._check_group_access(event)
@@ -313,7 +335,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("改图")
-    async def cmd_edit(self, event: AstrMessageEvent, *, prompt: str):
+    async def cmd_edit(self, event: AstrMessageEvent, *, prompt: GreedyStr):
         """改图（需携带/引用图片）：/改图 <提示词>"""
         err = self._check_group_access(event)
         if err:
