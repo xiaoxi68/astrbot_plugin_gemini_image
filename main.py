@@ -372,8 +372,8 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("手办化")
-    async def cmd_figure(self, event: AstrMessageEvent):
-        """手办化（需携带/引用图片）：/手办化"""
+    async def cmd_figure(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+        """手办化（需携带/引用图片）：/手办化 [描述]"""
         err = self._check_group_access(event)
         if err:
             yield event.plain_result(err)
@@ -386,20 +386,10 @@ class GeminiImagePlugin(Star):
             "博物馆级摄影质感，全身细节无损，面部结构精准。"
             "禁止：任何2D元素或照搬原图、塑料感、面部模糊、五官错位、细节丢失。"
         )
+        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        
         # 检查是否包含图片
-        has_image = False
-        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
-            for comp in event.message_obj.message:
-                if isinstance(comp, Image):
-                    has_image = True
-                    break
-                if isinstance(comp, Reply) and comp.chain:
-                    for reply_comp in comp.chain:
-                        if isinstance(reply_comp, Image):
-                            has_image = True
-                            break
-                if has_image:
-                    break
+        has_image = self._check_has_image(event)
         if not has_image:
             yield event.plain_result("手办化需要携带或引用图片，请附图后再发送：/手办化")
             return
@@ -408,7 +398,7 @@ class GeminiImagePlugin(Star):
         yield event.plain_result("🎨 收到请求，正在生成 [手办化]...")
         
         # 然后执行生成并发送结果
-        async for res in self.gemini_image_tool(event, image_description=default_prompt, use_reference_images=True, mode="edit"):
+        async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=True, mode="edit"):
             yield res
 
     @filter.command("手办化2")
