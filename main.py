@@ -372,7 +372,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("手办化")
-    async def cmd_figure(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+    async def cmd_figure(self, event: AstrMessageEvent, prompt: GreedyStr = None):
         """手办化（需携带/引用图片）：/手办化 [描述]"""
         err = self._check_group_access(event)
         if err:
@@ -386,7 +386,8 @@ class GeminiImagePlugin(Star):
             "博物馆级摄影质感，全身细节无损，面部结构精准。"
             "禁止：任何2D元素或照搬原图、塑料感、面部模糊、五官错位、细节丢失。"
         )
-        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        user_prompt = str(prompt) if prompt else ""
+        final_prompt = f"{default_prompt}\n用户补充要求：{user_prompt}" if user_prompt.strip() else default_prompt
         
         # 检查是否包含图片
         has_image = self._check_has_image(event)
@@ -401,42 +402,6 @@ class GeminiImagePlugin(Star):
         async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=True, mode="edit"):
             yield res
 
-    @filter.command("手办化2")
-    async def cmd_figure2(self, event: AstrMessageEvent):
-        """手办化2（需携带/引用图片）：/手办化2"""
-        err = self._check_group_access(event)
-        if err:
-            yield event.plain_result(err)
-            return
-        default_prompt2 = (
-            "Create a highly realistic 1/7 scale commercialized figure based on the illustration’s adult character, "
-            "ensuring the appearance and content are safe, healthy, and free from any inappropriate elements. "
-            "Render the figure in a detailed, lifelike style and environment, placed on a shelf inside an ultra-realistic figure display cabinet, "
-            "mounted on a circular transparent acrylic base without any text. Maintain highly precise details in texture, material, and paintwork to enhance realism. "
-            "The cabinet scene should feature a natural depth of field with a smooth transition between foreground and background for a realistic photographic look. "
-            "Lighting should appear natural and adaptive to the scene, automatically adjusting based on the overall composition instead of being locked to a specific direction, "
-            "simulating the quality and reflection of real commercial photography. Other shelves in the cabinet should contain different figures which are slightly blurred due to being out of focus, enhancing spatial realism and depth."
-        )
-        # 检查是否包含图片
-        has_image = False
-        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
-            for comp in event.message_obj.message:
-                if isinstance(comp, Image):
-                    has_image = True
-                    break
-                if isinstance(comp, Reply) and comp.chain:
-                    for reply_comp in comp.chain:
-                        if isinstance(reply_comp, Image):
-                            has_image = True
-                            break
-                if has_image:
-                    break
-        if not has_image:
-            yield event.plain_result("手办化2需要携带或引用图片，请附图后再发送：/手办化2")
-            return
-        async for res in self.gemini_image_tool(event, image_description=default_prompt2, use_reference_images=True, mode="edit"):
-            yield res
-
     @filter.command("aiimg帮助")
     async def cmd_help(self, event: AstrMessageEvent):
         """帮助：/aiimg帮助"""
@@ -449,7 +414,6 @@ class GeminiImagePlugin(Star):
             "━━━━━━━━━━━━━━━━━━\n"
             "⚡ 快速指令（携带/引用图片）：\n"
             "• 手办化   → 将角色转为收藏级树脂手办风格\n"
-            "• 手办化2  → 英文提示词版本手办化\n"
             "• 海报    → 生成16:9宣传海报风格\n"
             "• 壁纸    → 生成高清桌面壁纸\n"
             "• 卡片    → 生成精美卡片/名片风格\n"
@@ -467,7 +431,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("海报")
-    async def cmd_poster(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+    async def cmd_poster(self, event: AstrMessageEvent, prompt: GreedyStr = None):
         """海报（可携带/引用图片）：/海报 [描述]"""
         err = self._check_group_access(event)
         if err:
@@ -479,7 +443,8 @@ class GeminiImagePlugin(Star):
             "色彩饱满鲜明，层次分明，具有商业宣传海报的精致质感。"
             "高清细节，专业排版美感，适合用作宣传展示。"
         )
-        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        user_prompt = str(prompt) if prompt else ""
+        final_prompt = f"{default_prompt}\n用户补充要求：{user_prompt}" if user_prompt.strip() else default_prompt
         
         # 检查是否包含图片
         has_image = self._check_has_image(event)
@@ -491,7 +456,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("壁纸")
-    async def cmd_wallpaper(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+    async def cmd_wallpaper(self, event: AstrMessageEvent, prompt: GreedyStr = None):
         """壁纸（可携带/引用图片）：/壁纸 [描述]"""
         err = self._check_group_access(event)
         if err:
@@ -503,7 +468,8 @@ class GeminiImagePlugin(Star):
             "画面干净整洁，适合作为电脑桌面背景。"
             "细节丰富，光影自然，具有艺术美感和沉浸感。"
         )
-        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        user_prompt = str(prompt) if prompt else ""
+        final_prompt = f"{default_prompt}\n用户补充要求：{user_prompt}" if user_prompt.strip() else default_prompt
         
         has_image = self._check_has_image(event)
         
@@ -513,7 +479,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("卡片")
-    async def cmd_card(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+    async def cmd_card(self, event: AstrMessageEvent, prompt: GreedyStr = None):
         """卡片（可携带/引用图片）：/卡片 [描述]"""
         err = self._check_group_access(event)
         if err:
@@ -525,7 +491,8 @@ class GeminiImagePlugin(Star):
             "色彩搭配和谐，具有精致的印刷品质感。"
             "边框与装饰元素得当，整体风格统一协调。"
         )
-        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        user_prompt = str(prompt) if prompt else ""
+        final_prompt = f"{default_prompt}\n用户补充要求：{user_prompt}" if user_prompt.strip() else default_prompt
         
         has_image = self._check_has_image(event)
         
@@ -535,7 +502,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("手机壁纸")
-    async def cmd_phone_wallpaper(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+    async def cmd_phone_wallpaper(self, event: AstrMessageEvent, prompt: GreedyStr = None):
         """手机壁纸（可携带/引用图片）：/手机壁纸 [描述]"""
         err = self._check_group_access(event)
         if err:
@@ -547,7 +514,8 @@ class GeminiImagePlugin(Star):
             "色彩鲜明但不刺眼，适合日常使用。"
             "画面简洁有层次，细节精致，具有现代感。"
         )
-        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        user_prompt = str(prompt) if prompt else ""
+        final_prompt = f"{default_prompt}\n用户补充要求：{user_prompt}" if user_prompt.strip() else default_prompt
         
         has_image = self._check_has_image(event)
         
@@ -557,7 +525,7 @@ class GeminiImagePlugin(Star):
             yield res
 
     @filter.command("表情包")
-    async def cmd_sticker(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+    async def cmd_sticker(self, event: AstrMessageEvent, prompt: GreedyStr = None):
         """表情包（可携带/引用图片）：/表情包 [描述]"""
         err = self._check_group_access(event)
         if err:
@@ -570,7 +538,8 @@ class GeminiImagePlugin(Star):
             "背景简单或透明，适合用作聊天表情。"
             "整体风格可爱萌系，富有表现力和感染力。"
         )
-        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        user_prompt = str(prompt) if prompt else ""
+        final_prompt = f"{default_prompt}\n用户补充要求：{user_prompt}" if user_prompt.strip() else default_prompt
         
         has_image = self._check_has_image(event)
         
