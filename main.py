@@ -179,6 +179,10 @@ class GeminiImagePlugin(Star):
         # 尝试执行 images 目录定期清理
         await self._maybe_cleanup_images()
 
+        # 为提示词添加图片生成目标提示，避免多模态模型返回纯文本
+        image_generation_prefix = "【本次任务目标：生成图片】请根据以下描述生成一张图片，必须输出图像而非文本描述：\n"
+        image_description = image_generation_prefix + image_description
+
         # gcli2api 模式：仅需 gcli2api_api_password（默认 pwd），无需官方 API Key
 
         # 收集参考图片（当前消息与引用消息）
@@ -447,12 +451,154 @@ class GeminiImagePlugin(Star):
     async def cmd_help(self, event: AstrMessageEvent):
         """帮助：/aiimg帮助"""
         help_text = (
-            "AI 图像命令：\n"
-            "- 生图 <提示词>  → 纯文本生图\n"
-            "- 改图 <提示词>  → 携带/引用图片后进行改图\n"
-            "- 手办化        → 携带/引用图片后，使用内置提示词进行手办化改图\n"
-            "- 手办化2       → 携带/引用图片后，使用内置提示词进行手办化改图\n"
+            "🎨 AI 图像生成帮助\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "📝 基础指令：\n"
+            "• 生图 <提示词>  → 纯文本生图\n"
+            "• 改图 <提示词>  → 携带/引用图片进行改图\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "⚡ 快速指令（携带/引用图片）：\n"
+            "• 手办化   → 将角色转为收藏级树脂手办风格\n"
+            "• 手办化2  → 英文提示词版本手办化\n"
+            "• 海报    → 生成16:9宣传海报风格\n"
+            "• 壁纸    → 生成高清桌面壁纸\n"
+            "• 卡片    → 生成精美卡片/名片风格\n"
+            "• 手机壁纸 → 生成9:16竖版手机壁纸\n"
+            "• 表情包   → 生成Q版LINE风格表情包\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "💡 提示：快速指令后可追加描述以自定义效果"
         )
         yield event.plain_result(help_text)
+
+    @filter.command("生图帮助")
+    async def cmd_help_alias(self, event: AstrMessageEvent):
+        """帮助（别名）：/生图帮助"""
+        async for res in self.cmd_help(event):
+            yield res
+
+    @filter.command("海报")
+    async def cmd_poster(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+        """海报（可携带/引用图片）：/海报 [描述]"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "将画面转换为专业电影海报风格，16:9宽屏比例。"
+            "采用电影级构图和光影效果，突出主体视觉冲击力。"
+            "色彩饱满鲜明，层次分明，具有商业宣传海报的精致质感。"
+            "高清细节，专业排版美感，适合用作宣传展示。"
+        )
+        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        
+        # 检查是否包含图片
+        has_image = self._check_has_image(event)
+        
+        # 先返回生成中提示
+        yield event.plain_result("🎨 收到请求，正在生成 [海报]...")
+        
+        async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=has_image, mode="edit" if has_image else "generate"):
+            yield res
+
+    @filter.command("壁纸")
+    async def cmd_wallpaper(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+        """壁纸（可携带/引用图片）：/壁纸 [描述]"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "将画面转换为高清桌面壁纸风格，16:9宽屏比例，4K超高清质量。"
+            "构图优美，色彩和谐，视觉舒适。"
+            "画面干净整洁，适合作为电脑桌面背景。"
+            "细节丰富，光影自然，具有艺术美感和沉浸感。"
+        )
+        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        
+        has_image = self._check_has_image(event)
+        
+        yield event.plain_result("🎨 收到请求，正在生成 [壁纸]...")
+        
+        async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=has_image, mode="edit" if has_image else "generate"):
+            yield res
+
+    @filter.command("卡片")
+    async def cmd_card(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+        """卡片（可携带/引用图片）：/卡片 [描述]"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "将画面转换为精美卡片风格，3:2比例。"
+            "设计简洁大方，排版美观，适合用作名片、贺卡或收藏卡片。"
+            "色彩搭配和谐，具有精致的印刷品质感。"
+            "边框与装饰元素得当，整体风格统一协调。"
+        )
+        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        
+        has_image = self._check_has_image(event)
+        
+        yield event.plain_result("🎨 收到请求，正在生成 [卡片]...")
+        
+        async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=has_image, mode="edit" if has_image else "generate"):
+            yield res
+
+    @filter.command("手机壁纸")
+    async def cmd_phone_wallpaper(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+        """手机壁纸（可携带/引用图片）：/手机壁纸 [描述]"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "将画面转换为手机壁纸风格，9:16竖版比例，2K高清质量。"
+            "构图适合竖屏展示，主体位置考虑手机图标和时间显示区域。"
+            "色彩鲜明但不刺眼，适合日常使用。"
+            "画面简洁有层次，细节精致，具有现代感。"
+        )
+        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        
+        has_image = self._check_has_image(event)
+        
+        yield event.plain_result("🎨 收到请求，正在生成 [手机壁纸]...")
+        
+        async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=has_image, mode="edit" if has_image else "generate"):
+            yield res
+
+    @filter.command("表情包")
+    async def cmd_sticker(self, event: AstrMessageEvent, *, prompt: GreedyStr = ""):
+        """表情包（可携带/引用图片）：/表情包 [描述]"""
+        err = self._check_group_access(event)
+        if err:
+            yield event.plain_result(err)
+            return
+        default_prompt = (
+            "将画面转换为Q版可爱表情包风格，LINE贴纸风格。"
+            "角色Q版化，大头小身，表情夸张生动有趣。"
+            "线条简洁流畅，色彩明快活泼。"
+            "背景简单或透明，适合用作聊天表情。"
+            "整体风格可爱萌系，富有表现力和感染力。"
+        )
+        final_prompt = f"{default_prompt}\n用户补充要求：{prompt}" if prompt.strip() else default_prompt
+        
+        has_image = self._check_has_image(event)
+        
+        yield event.plain_result("🎨 收到请求，正在生成 [表情包]...")
+        
+        async for res in self.gemini_image_tool(event, image_description=final_prompt, use_reference_images=has_image, mode="edit" if has_image else "generate"):
+            yield res
+
+    def _check_has_image(self, event: AstrMessageEvent) -> bool:
+        """检查消息中是否包含图片"""
+        if hasattr(event, 'message_obj') and event.message_obj and hasattr(event.message_obj, 'message'):
+            for comp in event.message_obj.message:
+                if isinstance(comp, Image):
+                    return True
+                if isinstance(comp, Reply) and comp.chain:
+                    for reply_comp in comp.chain:
+                        if isinstance(reply_comp, Image):
+                            return True
+        return False
 
     # 已移除 gconf 指令组，配置请在 AstrBot 插件设置中修改
